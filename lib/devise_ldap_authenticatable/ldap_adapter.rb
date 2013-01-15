@@ -328,15 +328,12 @@ module Devise
           operations = ops
         end
 
-        if ::Devise.ldap_use_admin_to_bind
-          privileged_ldap = LdapConnect.admin
-        else
-          authenticate!
-          privileged_ldap = self.ldap
-        end
+        the_dn = dn
+        authenticate!
 
-        DeviseLdapAuthenticatable::Logger.send("Modifying user #{dn}")
-        privileged_ldap.modify(:dn => dn, :operations => operations)
+        DeviseLdapAuthenticatable::Logger.send("Modifying user #{the_dn} with operations #{operations.inspect}")
+
+        @ldap.modify(:dn => the_dn, :operations => operations)
       end
 
     end
