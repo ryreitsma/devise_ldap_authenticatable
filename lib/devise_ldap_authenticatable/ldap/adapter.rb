@@ -26,17 +26,15 @@ module Devise
       end
 
       def self.update_password(login, new_password)
+        return if new_password.blank?
+
         options = {:login => login,
                    :new_password => new_password,
                    :ldap_auth_username_builder => ::Devise.ldap_auth_username_builder,
                    :admin => ::Devise.ldap_use_admin_to_bind}
 
         resource = Devise::LDAP::Connection.new(options)
-        resource.change_password! if new_password.present?
-      end
-
-      def self.update_own_password(login, new_password, current_password)
-        set_ldap_param(login, :userPassword, ::Devise.ldap_auth_password_builder.call(new_password), current_password)
+        resource.change_password!
       end
 
       def self.ldap_connect(login)
