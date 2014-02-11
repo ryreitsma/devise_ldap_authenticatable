@@ -25,13 +25,19 @@ module Devise
         resource.valid_user?
       end
 
-      def self.update_password(login, new_password)
+      def self.update_password(login, new_password, current_password = nil)
         return if new_password.blank?
 
         options = {:login => login,
                    :new_password => new_password,
-                   :ldap_auth_username_builder => ::Devise.ldap_auth_username_builder,
-                   :admin => ::Devise.ldap_use_admin_to_bind}
+                   :ldap_auth_username_builder => ::Devise.ldap_auth_username_builder}
+
+        if ::Devise.ldap_use_admin_to_bind
+          options.merge!(:admin => true)
+        else
+          options.merge!(:password => current_password)
+        end
+
 
         resource = Devise::LDAP::Connection.new(options)
         resource.change_password!

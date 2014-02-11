@@ -40,6 +40,9 @@ module Devise
 
   mattr_accessor :ldap_ad_group_check
   @@ldap_ad_group_check = false
+
+  mattr_accessor :ldap_is_ad
+  @@ldap_is_ad = false
 end
 
 # Add ldap_authenticatable strategy to defaults.

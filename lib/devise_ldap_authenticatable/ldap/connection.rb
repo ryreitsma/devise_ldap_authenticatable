@@ -18,6 +18,7 @@ module Devise
 
         @group_base = ldap_config["group_base"]
         @check_group_membership = ldap_config.has_key?("check_group_membership") ? ldap_config["check_group_membership"] : ::Devise.ldap_check_group_membership
+        @ldap_is_ad = ldap_config.has_key?("ldap_is_ad") ? ldap_config["ldap_is_ad"] : ::Devise.ldap_is_ad
         @required_groups = ldap_config["required_groups"]
         @required_attributes = ldap_config["require_attribute"]
 
@@ -105,7 +106,37 @@ module Devise
       end
 
       def change_password!
-        update_ldap(:userPassword => ::Devise.ldap_auth_password_builder.call(@new_password))
+        if @ldap_is_ad
+          the_dn = dn
+
+          DeviseLdapAuthenticatable::Logger.send("Change_password: Logging in with #{the_dn.inspect}")
+          DeviseLdapAuthenticatable::Logger.send("Result: #{@ldap.get_operation_result}")
+
+          authenticate!
+
+          # A :replace operation does not work, it has to be 'delete the old password value', 'add the new password value'
+          result = @ldap.modify( dn: the_dn, operations: [
+              [:delete, :unicodePwd, encode_for_ad(@password) ],
+              [:add, :unicodePwd, encode_for_ad(@new_password)] ]
+          )
+
+          DeviseLdapAuthenticatable::Logger.send("Result of modify: #{@ldap.get_operation_result}")
+
+          result
+        else
+          set_param(:userpassword, Net::LDAP::Password.generate(:sha, @new_password))
+        end
+      end
+
+      def encode_for_ad( password )
+        # ActiveDirectory requires that
+        # - the password is contained in double quotes,
+        # - the whole password (including quotes) is UTF-16 Little Endian
+        encoded_password = "\"#{password}\"".encode("UTF-16LE")
+
+        # net-ldap only handles ASCII input, this converts the password into
+        # a format that can be sent 'over the wire'
+        encoded_password.force_encoding("ASCII-8BIT")
       end
 
       def in_required_groups?
