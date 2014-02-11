@@ -50,7 +50,7 @@ module Devise
       def ldap_param_value(param)
         filter = Net::LDAP::Filter.eq(@attribute.to_s, @login.to_s)
         ldap_entry = nil
-        @ldap.search(:filter => filter) {|entry| ldap_entry = entry}
+        @ldap.search(:filter => filter, :return_result => false) {|entry| ldap_entry = entry}
 
         if ldap_entry
           unless ldap_entry[param].empty?
@@ -161,7 +161,7 @@ module Devise
         admin_ldap = Connection.admin
 
         unless ::Devise.ldap_ad_group_check
-          admin_ldap.search(:base => group_name, :scope => Net::LDAP::SearchScope_BaseObject) do |entry|
+          admin_ldap.search(:base => group_name, :scope => Net::LDAP::SearchScope_BaseObject, :return_result => false) do |entry|
             if entry[group_attribute].include? dn
               in_group = true
             end
@@ -222,7 +222,7 @@ module Devise
         filter = Net::LDAP::Filter.eq(@attribute.to_s, @login.to_s)
         ldap_entry = nil
         match_count = 0
-        @ldap.search(:filter => filter) {|entry| ldap_entry = entry; match_count+=1}
+        @ldap.search(:filter => filter, :return_result => false) {|entry| ldap_entry = entry; match_count+=1}
         DeviseLdapAuthenticatable::Logger.send("LDAP search yielded #{match_count} matches")
         ldap_entry
       end
