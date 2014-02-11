@@ -11,12 +11,25 @@ Gem::Specification.new do |s|
   s.homepage = 'https://github.com/cschiewek/devise_ldap_authenticatable'
   s.description = s.summary
   s.authors = ['Curtis Schiewek', 'Daniel McNevin', 'Steven Xu']
+  s.license = 'MIT'
 
   s.files         = `git ls-files`.split("\n")
   s.test_files    = `git ls-files -- {test,spec,features}/*`.split("\n")
   s.executables   = `git ls-files -- bin/*`.split("\n").map{ |f| File.basename(f) }
   s.require_paths = ["lib"]
 
-  s.add_dependency('devise', '~> 1.5.0')
-  s.add_dependency('net-ldap', '~> 0.2.2')
+  s.add_dependency('devise', '>= 3.0')
+  s.add_dependency('net-ldap', '>= 0.3.1', '< 0.6.0')
+
+  s.add_development_dependency('rake', '>= 0.9')
+  s.add_development_dependency('rdoc', '>= 3')
+  s.add_development_dependency('rails', '>= 4.0')
+  s.add_development_dependency('sqlite3')
+  s.add_development_dependency('factory_girl_rails', '~> 1.0')
+  s.add_development_dependency('factory_girl', '~> 2.0')
+  s.add_development_dependency('rspec-rails')
+
+  %w{database_cleaner capybara launchy}.each do |dep|
+    s.add_development_dependency(dep)
+  end
 end

@@ -1,4 +1,4 @@
-require 'devise_ldap_authenticatable/strategy'
+﻿require 'devise_ldap_authenticatable/strategy'
 
 module Devise
   module Models
@@ -21,16 +21,16 @@ module Devise
         @login_with ||= Devise.mappings[self.class.to_s.underscore.to_sym].to.authentication_keys.first
         self[@login_with]
       end
-      
+
       def change_password!(current_password)
         raise "Need to set new password first" if @password.blank?
 
-        Devise::LdapAdapter.update_password(login_with, @password, current_password)
+        Devise::LDAP::Adapter.update_password(login_with, @password, current_password)
       end
-      
+
       def reset_password!(new_password, new_password_confirmation)
         if new_password == new_password_confirmation && ::Devise.ldap_update_password
-          Devise::LdapAdapter.update_password(login_with, new_password)
+          Devise::LDAP::Adapter.update_password(login_with, new_password)
         end
         clear_reset_password_token if valid?
         save
@@ -38,27 +38,34 @@ module Devise
 
       def password=(new_password)
         @password = new_password
+        if defined?(password_digest) && @password.present? && respond_to?(:encrypted_password=)
+          self.encrypted_password = password_digest(@password) 
+        end
       end
 
       # Checks if a resource is valid upon authentication.
       def valid_ldap_authentication?(password)
-        if Devise::LdapAdapter.valid_credentials?(login_with, password)
+        if Devise::LDAP::Adapter.valid_credentials?(login_with, password)
           return true
         else
           return false
         end
       end
-      
+
       def ldap_groups
-        Devise::LdapAdapter.get_groups(login_with)
+        Devise::LDAP::Adapter.get_groups(login_with)
       end
-      
+
+      def in_ldap_group?(group_name, group_attribute = LDAP::DEFAULT_GROUP_UNIQUE_MEMBER_LIST_KEY)
+        Devise::LDAP::Adapter.in_ldap_group?(login_with, group_name, group_attribute)
+      end
+
       def ldap_dn
-        Devise::LdapAdapter.get_dn(login_with)
+        Devise::LDAP::Adapter.get_dn(login_with)
       end
 
       def ldap_get_param(login_with, param)
-        Devise::LdapAdapter.get_ldap_param(login_with,param)
+        Devise::LDAP::Adapter.get_ldap_param(login_with,param)
       end
 
       #
@@ -71,36 +78,33 @@ module Devise
 
 
       module ClassMethods
-        # Authenticate a user based on configured attribute keys. Returns the
-        # authenticated user if it's valid or nil.
-        def authenticate_with_ldap(attributes={}) 
+        # Find a user for ldap authentication.
+        def find_for_ldap_authentication(attributes={})
           auth_key = self.authentication_keys.first
-          return nil unless attributes[auth_key].present? 
+          return nil unless attributes[auth_key].present?
 
-          # resource = find_for_ldap_authentication(conditions)
-          resource = where(auth_key => attributes[auth_key]).first
-                    
-          if (resource.blank? and ::Devise.ldap_create_user)
+          auth_key_value = (self.case_insensitive_keys || []).include?(auth_key) ? attributes[auth_key].downcase : attributes[auth_key]
+
+          resource = where(auth_key => auth_key_value).first
+
+          if resource.blank? && ::Devise.ldap_create_user
             resource = new
-            resource[auth_key] = attributes[auth_key]
+            resource[auth_key] = auth_key_value
             resource.password = attributes[:password]
           end
-                    
-          if resource.try(:valid_ldap_authentication?, attributes[:password])
-            if resource.new_record?
-              resource.ldap_before_save if resource.respond_to?(:ldap_before_save)
-              resource.save 
-            end
-            return resource
-          else
-            return nil
+
+          if resource && resource.new_record? && resource.valid_ldap_authentication?(attributes[:password])
+            resource.ldap_before_save if resource.respond_to?(:ldap_before_save)
+            resource.save!
           end
+
+          resource
         end
-        
+
         def update_with_password(resource)
           puts "UPDATE_WITH_PASSWORD: #{resource.inspect}"
         end
-        
+
       end
     end
   end

@@ -1,4 +1,5 @@
 .bundle
+Gemfile.lock
 log
 *.sqlite3
 test/ldap/openldap-data/*
@@ -6,3 +7,4 @@ test/ldap/openldap-data/*
 test/ldap/openldap-data/run/slapd.*
 test/rails_app/tmp
 pkg/*
+*.gem
