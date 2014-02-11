@@ -91,6 +91,19 @@ module Devise
         end
       end
 
+      def valid_user?
+        DeviseLdapAuthenticatable::Logger.send("Checking if user #{dn} is valid")
+        if !in_required_groups?
+          DeviseLdapAuthenticatable::Logger.send("Not a valid user because it is not in required groups.")
+          return false
+        elsif !has_required_attribute?
+          DeviseLdapAuthenticatable::Logger.send("No a valid user because it does not have required attribute.")
+          return false
+        else
+          return true
+        end
+      end
+
       def change_password!
         update_ldap(:userPassword => ::Devise.ldap_auth_password_builder.call(@new_password))
       end
