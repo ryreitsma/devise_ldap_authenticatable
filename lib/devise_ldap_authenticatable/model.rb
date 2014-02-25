@@ -68,6 +68,10 @@ module Devise
         Devise::LDAP::Adapter.get_ldap_param(login_with,param)
       end
 
+      def single_ldap_property(login_with, property_name)
+        Devise::LDAP::Adapter.get_ldap_param(login_with, property_name).first
+      end
+
       #
       # callbacks
       #
