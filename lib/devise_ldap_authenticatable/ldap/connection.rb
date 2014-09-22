@@ -115,17 +115,21 @@ module Devise
           authenticate!
 
           # A :replace operation does not work, it has to be 'delete the old password value', 'add the new password value'
-          result = @ldap.modify( dn: the_dn, operations: [
+          @ldap.modify( dn: the_dn, operations: [
               [:delete, :unicodePwd, encode_for_ad(@password) ],
               [:add, :unicodePwd, encode_for_ad(@new_password)] ]
           )
-
-          DeviseLdapAuthenticatable::Logger.send("Result of modify: #{@ldap.get_operation_result}")
-
-          result
         else
           set_param(:userpassword, Net::LDAP::Password.generate(:sha, @new_password))
         end
+
+        result = @ldap.get_operation_result
+        DeviseLdapAuthenticatable::Logger.send("Result of modify: #{result}")
+
+        if result.code == 19
+          raise DeviseLdapAuthenticatable::InsufficientComplexityException
+        end
+
       end
 
       def encode_for_ad( password )
