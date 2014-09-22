@@ -30,12 +30,11 @@ module Devise
 
         options = {:login => login,
                    :new_password => new_password,
+                   :password => current_password,
                    :ldap_auth_username_builder => ::Devise.ldap_auth_username_builder}
 
         if ::Devise.ldap_use_admin_to_bind
           options.merge!(:admin => true)
-        else
-          options.merge!(:password => current_password)
         end
 
 
